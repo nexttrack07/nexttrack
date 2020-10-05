@@ -1,0 +1,166 @@
+---
+title: Demistifying Json Web Tokens
+image: '/authentication.png'
+---
+
+In this article, we take a deep dive and try to understand the HOWs, WHATs and WHYs of **Json Web Tokens**.
+
+## The Authentication Flow
+
+JWTs are generally used to authorize the visitors of a website. In order to understand that statement, we need to understand the authentication flow.
+The authentication flow is a three step process:
+
+- Registration: When your website or app gets a brand new user, they are said to have been registered.
+- Authentication: When a registered user visits your website and is 'let in'.
+- Authorization: When a registered user tries to visit a certain piece of content in your website and is 'given access'.
+
+JWTs are used to help with authorization. How do they help? What do they do?
+
+Let's imagine that a user wants to go to a particular route in our website that is _protected_.
+
+<Note title='What are protected routes?'>
+  A protected route is a route that is inaccessible by the general public. The
+  user requires permission to access such a route.
+</Note>
+
+1. The user first must register an account on your website. At this point, the server will create a new record/document in the database with the user credentials (e.g. username/email and password).
+2. This user is then redirected to the login page where he will need to submit his correct credentials via the login form. The server can they verify the veracity of these credentials with the stored credentials in the database.
+3. The user then should somehow be given access to the protected routes of the website. But how can we do this?
+
+When a user is trying to access a particular route, our client is making a HTTP request to our server.
+
+For example, in a Todo App, the user might try to access his todos list by going to the `/todos` route. But since the `/todos` route is protected, he will need to login first.
+
+The user will need visit the `/login` route before our server can authorize him to access the `/todos` route.
+
+However, since HTTP is a _stateless_ protocol, when the client makes a request to the `/todos` route, there is no built-in way to know that this user has already logged in.
+
+<Note title='What does stateless mean?'>
+  Stateless can be understood as "unaware of previous data". The HTTP request is
+  not aware of any of the previous requests that were made and each request is
+  isolated.
+</Note>
+
+How can we solve this problem?
+
+## A Token System
+
+![Authentication Flow](/auth-flow.png)
+
+One way we can solve it, is through a simple token system. Whenever a user logs in, we can assign a token to them.
+
+This token can be thought of as an access key for a building or a hotel.
+
+Once you're a registered guest at the hotel, you will be given an access key which you can use to access different facilities of the hotel like gym, swimming pool, computers, and your room/suite.
+
+Similarly, our website can provide a user a token after successful login.
+
+The client can then store this token securely and pass it along with each subsequent request to the server as proof of successful authentication.
+
+The server can use this as an authorization mechanism to ensure that the client has access to protected resources.
+
+<Note title='Why is it called a token?'>
+  The word token in this context is synonymous with 'data'. It is just a term
+  used to represent the transfer of data between server and client
+</Note>
+
+## Json Web Tokens
+
+JWT is an open standard or in other words, a 'guideline' for creating these tokens.
+
+It's important to understand that a JWT is not a special type of token itself, rather it's a standard for creating a token that you can use.
+
+There are several things that characterize a Json Web Token:
+
+- JWTs are made of three parts: Header, Payload and Signature
+- JWTs are generated using a special secret on the server
+- JWTs are encoded into base64 before transport via HTTP
+- JWTs are self-contained
+- JWTs, by convention, are sent via the Authorization HTTP Header using a Bearer schema
+- JWTs can use public/private key pair instead of a secret
+
+Let's take a look at each of these characteristics and understand them at a deeper level.
+
+## The structure of a JWT
+
+A Json Web Token is made up of three parts:
+
+**Header**
+
+The header is an JSON object that typically contains two properties: Type of the token and Hashing algorithm.
+
+The type property has a value of JWT for Json Web Tokens.
+
+The hashing algorithm can actually be any legitimate hashing algorithm. However, typically it is one of the following: HMAC, SHA256 or RSA.
+
+We'll come back and explore the hashing algorithm further when we discuss the Signature of a JWT.
+
+```json
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+```
+
+The JWT Header format is called JOSE (JSON Object Signing and Encryption).
+
+---
+
+**Payload**
+
+The payload is also a JSON object. It can have several properties.
+
+These properties are referred to as claims.
+
+Claims can be either reserved or custom.
+
+A reserved claim is a set of predefined or standardized claims that are recommended to use but not mandatory. Examples of reserved claims are:
+
+- iss: issuer => the entity that issues the JWT
+- exp: expiration time
+- sub: subject => the topic of the JWT. Usually this is a user id
+- aud: audience => who the JWT is meant for
+- nbf: not before time => time before which a JWT is not considered valid
+
+...etc. You can see the full list of reserved claims at [IANA JSON Web Token Claims Registry](https://www.iana.org/assignments/jwt/jwt.xhtml#claims)
+
+A custom claim can contain private information like information about the user that is specific to your app or public information like email or name.
+
+It is important to ensure that custom claims don't have naming collisions with the reserved claims.
+
+If you notice carefully, you'll see that the reserved claims are typically only three characters long. This is to ensure the JWT stays compact and small.
+
+Custom claims can be any size but it's important to keep the JWT compact for faster transfer.
+
+```json
+{
+  "sub": "12301blx8",
+  "exp": "1601867322155",
+  "name": "Rick Morton",
+  "admin": false
+}
+```
+
+The first two claims in the above payload are reserverd, while the latter two are custom.
+
+Both the header and payload are base64 encoded before generating the signature.
+
+---
+
+**Signature**
+
+The last part of a JWT is the signature. Unlike the header and payload the signature is not an encoded object, rather it is a hash.
+
+The hash is generating using the following process:
+
+1. The header and payload are base64 encoded
+2. The header and payload along with a secret (random string of characters) are combined to form a unique value
+3. The value from step 3 is used by the hashing algorithm (defined in the header) to generate a unique hash
+
+The hash here is referred to as a signature because each hash is unique. Only a particular header + payload + secret will produce a given hash.
+
+If the header has been changed somehow or the payload is different then the hash will be different.
+
+We can use this to find out if a JWT has been tampered with or not.
+
+![JWT Secret Creation](/jwt-secret.png)
