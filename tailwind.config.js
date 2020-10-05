@@ -2,7 +2,8 @@ module.exports = {
   theme: {
     fontFamily: {
       sans: ['Raleway', 'sans-serif'],
-      heading: ['Josefin Sans', 'sans-serif'],
+      heading: ['Lato', 'sans-serif'],
+      mono: ['Fira Code', 'monospace'],
     },
     screens: {
       xl: { max: '1279px' },

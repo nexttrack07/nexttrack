@@ -9,12 +9,15 @@
     "start": "next start"
   },
   "dependencies": {
+    "@mdx-js/react": "^1.6.18",
     "autoprefixer": "9.8.6",
+    "classnames": "^2.2.6",
     "gray-matter": "^4.0.2",
     "next": "9.5.3",
     "next-mdx-remote": "^1.0.0",
     "next-remote-watch": "^0.2.0",
     "postcss-import": "^12.0.1",
+    "prism-react-renderer": "^1.1.1",
     "react": "16.13.1",
     "react-dom": "16.13.1",
     "tailwindcss": "^1.8.10"

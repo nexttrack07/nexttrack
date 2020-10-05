@@ -1,9 +1,26 @@
 ---
-title: Demistifying Json Web Tokens
+title: Demistifying JSON Web Tokens
 image: '/authentication.png'
 ---
 
-In this article, we take a deep dive and try to understand the HOWs, WHATs and WHYs of **Json Web Tokens**.
+In this article, we take a deep dive and try to understand the HOWs, WHATs and WHYs of **JSON Web Tokens**.
+
+The aim of this article is to provide context surrounding JWTs that is so often skipped by other articles.
+
+It is geared towards beginners who want to understand the obscure terminology that other 'guides' are often inundated with.
+
+Having said that, let's dive right in.
+
+<Contents
+  contents={[
+    'The Authentication Flow',
+    'A Token System',
+    'JSON Web Tokens',
+    'The structure of a JWT',
+    'Verification of a JWT',
+    'Conclusion',
+  ]}
+/>
 
 ## The Authentication Flow
 
@@ -35,7 +52,7 @@ The user will need visit the `/login` route before our server can authorize him 
 
 However, since HTTP is a _stateless_ protocol, when the client makes a request to the `/todos` route, there is no built-in way to know that this user has already logged in.
 
-<Note title='What does stateless mean?'>
+<Note color='red' title='What does stateless mean?'>
   Stateless can be understood as "unaware of previous data". The HTTP request is
   not aware of any of the previous requests that were made and each request is
   isolated.
@@ -59,37 +76,36 @@ The client can then store this token securely and pass it along with each subseq
 
 The server can use this as an authorization mechanism to ensure that the client has access to protected resources.
 
-<Note title='Why is it called a token?'>
+<Note color='blue' title='Why is it called a token?'>
   The word token in this context is synonymous with 'data'. It is just a term
   used to represent the transfer of data between server and client
 </Note>
 
-## Json Web Tokens
+## JSON Web Tokens
 
 JWT is an open standard or in other words, a 'guideline' for creating these tokens.
 
 It's important to understand that a JWT is not a special type of token itself, rather it's a standard for creating a token that you can use.
 
-There are several things that characterize a Json Web Token:
+There are several things that characterize a JSON Web Token:
 
 - JWTs are made of three parts: Header, Payload and Signature
 - JWTs are generated using a special secret on the server
-- JWTs are encoded into base64 before transport via HTTP
+- JWTs are [encoded](https://stackoverflow.com/questions/201479/what-is-base-64-encoding-used-for) into base64 before transport via HTTP
 - JWTs are self-contained
 - JWTs, by convention, are sent via the Authorization HTTP Header using a Bearer schema
-- JWTs can use public/private key pair instead of a secret
 
 Let's take a look at each of these characteristics and understand them at a deeper level.
 
 ## The structure of a JWT
 
-A Json Web Token is made up of three parts:
+A JSON Web Token is made up of three parts:
 
 **Header**
 
 The header is an JSON object that typically contains two properties: Type of the token and Hashing algorithm.
 
-The type property has a value of JWT for Json Web Tokens.
+The type property has a value of JWT for JSON Web Tokens.
 
 The hashing algorithm can actually be any legitimate hashing algorithm. However, typically it is one of the following: HMAC, SHA256 or RSA.
 
@@ -143,13 +159,17 @@ Custom claims can be any size but it's important to keep the JWT compact for fas
 
 The first two claims in the above payload are reserverd, while the latter two are custom.
 
+The payload is what makes a JWT self-contained.
+
+The payload can contain the user id as the 'sub' claim along with an 'admin' custom claim to verify access without a database lookup.
+
 Both the header and payload are base64 encoded before generating the signature.
 
 ---
 
 **Signature**
 
-The last part of a JWT is the signature. Unlike the header and payload the signature is not an encoded object, rather it is a hash.
+The last part of a JWT is the signature. Unlike the header and payload the signature is not an encoded object, rather it is a [hash](https://en.wikipedia.org/wiki/Hash_function).
 
 The hash is generating using the following process:
 
@@ -164,3 +184,95 @@ If the header has been changed somehow or the payload is different then the hash
 We can use this to find out if a JWT has been tampered with or not.
 
 ![JWT Secret Creation](/jwt-secret.png)
+
+This type of signature involving multiple JSON objects is called a JSON Web Signature (JWS).
+
+A signed JSON Web Token implements a JWS.
+
+**The header, payload and signature are combined to form a JSON Web Token**
+
+The encoded JWT has a format of `xxxxxxx.yyyyyyy.zzzzzz` - Header, Payload and Secret separated by periods.
+
+The client includes this encoded JWT in a special HTTP header called 'Authorization'.
+
+Usually the value of the Authorization header starts with the word 'Bearer' followed by the JWT seprated by a space or a hyphen.
+
+The word Bearer can be simply understood as "give access to the bearer of this token."
+
+A really interesting point to note is that the JWT header and payload are publicly accessible since they are encoded and not encrypted.
+
+However, despite that, the signature of the JWT is non-reproducible because the secret is accessible only by our server.
+
+![Structure of JWT](/jwt-structure.png)
+
+## Verification of a JWT
+
+A JWT is verified using three steps:
+
+1. Check that the JWT implementation
+2. Check the JWT signature
+3. Check the JWT claims
+
+**Check JWT implementation**
+
+Checking the JWT implementation means verifying that the JWT has been constructed or formed correctly.
+
+Does it have three parts separated by periods?
+
+Are the header and payload base64 encoded?
+
+Are the decoded header and payload valid JSON objects?
+
+**Check the JWT signature**
+
+Does the JWT have a valid algorithm in the header JSON object?
+
+The algorithm along with the header and payload as well as secret are used to re-construct the signature.
+
+Then this constructed signature is compared to the signature present in the JWT.
+
+If they match exactly, then the JWT is valid otherwise it is invalid.
+
+**Check the JWT claims**
+
+Ensure that the JWT has not expired already using the 'exp' claim.
+
+Ensure the JWT is not invalid using the 'aud' and 'nbf' claims. Etc.
+
+Ensure the JWT subject/user has access using a custom claim like 'admin'.
+
+Once these three checks pass, the JWT is considered to be valid and the client can be authorized.
+
+Even though, you can implement JWT generation and verification by yourself, it's better to use one of several dedicated libraries in your progamming language.
+
+```js:controllers/auth-controller.js
+const jwt = require('jsonwebtoken') // jwt library for node.js
+const JWT_SECRET = 'supersecretstring1234@#$' // store secret in an .env file
+
+// payload containing claims
+const payload = {
+  sub: '1234',
+  username: 'john1998',
+  admin: true,
+}
+// header is auto-generated
+
+// generate the jwt
+const token = jwt.sign(payload, JWT_SECRET)
+
+// verify the token => returns decoded payload or throws an error
+jwt.verify(submitted_token, JWT_SECRET) // get the submitted_token from cookie or request header
+```
+
+## Conclusion
+
+There you have it. This should have given you a basic understand of JSON Web Tokens.
+
+The aim of this article was to provide a gentle introduction to JWTs.
+
+There is still a lot more about JWTs that we haven't covered here. You can learn more about them at
+
+- [Jwt.io](https://jwt.io)
+- [Hard parts of JWT](https://www.pingidentity.com/en/company/blog/posts/2019/jwt-security-nobody-talks-about.html)
+
+Please leave any comments below for questions or feedback.wi

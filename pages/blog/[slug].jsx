@@ -5,10 +5,11 @@ import fs from 'fs'
 import path from 'path'
 import { Header } from '../../components/header'
 import { Note } from '../../components/note'
+import { Contents } from '../../components/contents'
 
 const root = process.cwd()
 
-const components = { Note }
+const components = { Note, Contents }
 
 export default function BlogPost({ mdxSource, frontMatter }) {
   const content = hydrate(mdxSource, { components })
@@ -25,7 +26,7 @@ export default function BlogPost({ mdxSource, frontMatter }) {
             className='max-w-full h-auto'
           />
         </div>
-        <div className='text-justify'>{content}</div>
+        <div className='text-start'>{content}</div>
       </div>
     </>
   )
